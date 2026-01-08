@@ -1,11 +1,26 @@
 package com.example.placesintheworld
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -17,7 +32,10 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun DetailScreen(place: Place) {
-    var rotation by remember { mutableFloatStateOf(0f) }
+    var rotationYValue by remember { mutableFloatStateOf(0f) }
+    var scale by remember { mutableFloatStateOf(1f) }
+    var alpha by remember { mutableFloatStateOf(1f) }
+    var blurRadius by remember { mutableFloatStateOf(0f) }
 
     val saltyOceanFontFamily = FontFamily(
         Font(R.font.saltyocean, FontWeight.Normal)
@@ -50,7 +68,16 @@ fun DetailScreen(place: Place) {
                     .fillMaxWidth()
                     .height(300.dp)
                     .graphicsLayer {
-                        rotationY = rotation * 360f
+                        rotationY = rotationYValue
+                        scaleX = scale
+                        scaleY = scale
+                        this.alpha = alpha
+
+                        renderEffect = BlurEffect(
+                            blurRadius.dp.toPx(),
+                            blurRadius.dp.toPx(),
+                            TileMode.Decal
+                        )
                     },
                 contentScale = ContentScale.Crop
             )
@@ -67,10 +94,67 @@ fun DetailScreen(place: Place) {
                     modifier = Modifier.weight(1f)
                 )
                 Slider(
-                    value = rotation,
-                    onValueChange = { rotation = it },
+                    value = rotationYValue,
+                    onValueChange = { rotationYValue = it },
+                    modifier = Modifier.weight(2f),
+                    valueRange = 0f..360f
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Escala",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+                Slider(
+                    value = scale,
+                    onValueChange = { scale = it },
+                    modifier = Modifier.weight(2f),
+                    valueRange = 0.1f..3f
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Transparencia",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+                Slider(
+                    value = alpha,
+                    onValueChange = { alpha = it },
                     modifier = Modifier.weight(2f),
                     valueRange = 0f..1f
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Desenfoque",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+                Slider(
+                    value = blurRadius,
+                    onValueChange = { blurRadius = it },
+                    modifier = Modifier.weight(2f),
+                    valueRange = 0f..20f
                 )
             }
         }
