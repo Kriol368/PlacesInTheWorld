@@ -3,6 +3,8 @@ package com.example.placesintheworld
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,24 +12,9 @@ import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -49,14 +36,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun PlacesApp() {
     val navController = rememberNavController()
     var currentViewType by remember { mutableStateOf(ViewType.STAGGERED_GRID) }
     var showMenu by remember { mutableStateOf(false) }
 
-    // Usa valores por defecto del tema Material3
     val defaultTopBarColor = colorScheme.primary
     val defaultTopBarTitleColor = colorScheme.onPrimary
 
@@ -67,7 +53,6 @@ fun PlacesApp() {
 
     LaunchedEffect(navBackStackEntry?.destination?.route) {
         if (navBackStackEntry?.destination?.route == "home") {
-            // Restablece a los valores por defecto
             topBarColor = defaultTopBarColor
             topBarTitleColor = defaultTopBarTitleColor
         }
@@ -134,24 +119,42 @@ fun PlacesApp() {
         }
     ) { paddingValues ->
         Surface(modifier = Modifier.fillMaxSize(), color = colorScheme.background) {
-            NavHost(navController = navController, startDestination = "home") {
-                composable("home") {
+            NavHost(
+                navController = navController,
+                startDestination = "home",
+                modifier = Modifier.fillMaxSize()
+            ) {
+                composable(
+                    "home",
+                    enterTransition = {
+                        fadeIn(animationSpec = tween(400))
+                    },
+                    exitTransition = {
+                        fadeOut(animationSpec = tween(300))
+                    }
+                ) {
                     HomeScreen(
                         paddingValues = paddingValues,
                         onPlaceClick = { place -> navController.navigate("detail/${place.id}") },
                         currentViewType = currentViewType
                     )
                 }
-                composable("detail/{placeId}") { backStackEntry ->
+                composable(
+                    "detail/{placeId}",
+                    enterTransition = {
+                        fadeIn(animationSpec = tween(5000))
+                    },
+                    exitTransition = {
+                        fadeOut(animationSpec = tween(5000))
+                    }
+                ) { backStackEntry ->
                     val placeId = backStackEntry.arguments?.getString("placeId")?.toIntOrNull() ?: 0
-                    val place =
-                        getSamplePlaces().find { it.id == placeId } ?: getSamplePlaces().first()
+                    val place = getSamplePlaces().find { it.id == placeId } ?: getSamplePlaces().first()
                     DetailScreen(
                         place = place,
                         onColorsExtracted = { vibrantColor, darkVibrantColor ->
                             topBarColor = vibrantColor
-                            topBarTitleColor =
-                                if (ColorUtils.calculateLuminance(vibrantColor.toArgb()) < 0.5) Color.White else Color.Black
+                            topBarTitleColor = if (ColorUtils.calculateLuminance(vibrantColor.toArgb()) < 0.5) Color.White else Color.Black
                         }
                     )
                 }
