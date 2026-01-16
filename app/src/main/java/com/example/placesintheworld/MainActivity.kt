@@ -16,21 +16,25 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.ColorUtils
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.placesintheworld.ui.theme.PlacesInTheWorldTheme
 
@@ -52,23 +56,48 @@ fun PlacesApp() {
     var currentViewType by remember { mutableStateOf(ViewType.STAGGERED_GRID) }
     var showMenu by remember { mutableStateOf(false) }
 
+    // Usa valores por defecto del tema Material3
+    val defaultTopBarColor = colorScheme.primary
+    val defaultTopBarTitleColor = colorScheme.onPrimary
+
+    var topBarColor by remember { mutableStateOf(defaultTopBarColor) }
+    var topBarTitleColor by remember { mutableStateOf(defaultTopBarTitleColor) }
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+
+    LaunchedEffect(navBackStackEntry?.destination?.route) {
+        if (navBackStackEntry?.destination?.route == "home") {
+            // Restablece a los valores por defecto
+            topBarColor = defaultTopBarColor
+            topBarTitleColor = defaultTopBarTitleColor
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = topBarColor,
+                    titleContentColor = topBarTitleColor,
+                    actionIconContentColor = topBarTitleColor
                 ),
                 title = { Text("PlacesInTheWorld") },
                 navigationIcon = {
                     IconButton(onClick = { }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menú de navegación", tint = Color.White)
+                        Icon(
+                            Icons.Default.Menu,
+                            contentDescription = "Menú de navegación",
+                            tint = topBarTitleColor
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Más opciones",
+                            tint = topBarTitleColor
+                        )
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                         DropdownMenuItem(
@@ -104,7 +133,7 @@ fun PlacesApp() {
             }
         }
     ) { paddingValues ->
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Surface(modifier = Modifier.fillMaxSize(), color = colorScheme.background) {
             NavHost(navController = navController, startDestination = "home") {
                 composable("home") {
                     HomeScreen(
@@ -115,8 +144,16 @@ fun PlacesApp() {
                 }
                 composable("detail/{placeId}") { backStackEntry ->
                     val placeId = backStackEntry.arguments?.getString("placeId")?.toIntOrNull() ?: 0
-                    val place = getSamplePlaces().find { it.id == placeId } ?: getSamplePlaces().first()
-                    DetailScreen(place = place)
+                    val place =
+                        getSamplePlaces().find { it.id == placeId } ?: getSamplePlaces().first()
+                    DetailScreen(
+                        place = place,
+                        onColorsExtracted = { vibrantColor, darkVibrantColor ->
+                            topBarColor = vibrantColor
+                            topBarTitleColor =
+                                if (ColorUtils.calculateLuminance(vibrantColor.toArgb()) < 0.5) Color.White else Color.Black
+                        }
+                    )
                 }
             }
         }

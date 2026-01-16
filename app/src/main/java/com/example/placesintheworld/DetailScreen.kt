@@ -1,6 +1,8 @@
 package com.example.placesintheworld
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,155 +10,160 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.graphics.ColorUtils
+import androidx.palette.graphics.Palette
 
 @Composable
-fun DetailScreen(place: Place) {
-    var rotationYValue by remember { mutableFloatStateOf(0f) }
-    var scale by remember { mutableFloatStateOf(1f) }
-    var alpha by remember { mutableFloatStateOf(1f) }
-    var blurRadius by remember { mutableFloatStateOf(0f) }
+fun DetailScreen(
+    place: Place,
+    onColorsExtracted: (Color, Color) -> Unit
+) {
+    val context = LocalContext.current
+    val colors = remember { mutableStateOf<Palette?>(null) }
 
-    val saltyOceanFontFamily = FontFamily(
-        Font(R.font.saltyocean, FontWeight.Normal)
-    )
+    LaunchedEffect(place.imageRes) {
+        val bitmap = BitmapFactory.decodeResource(context.resources, place.imageRes)
+        Palette.from(bitmap).generate { palette ->
+            colors.value = palette
+            val vibrantColor = palette?.vibrantSwatch?.rgb?.let { Color(it) } ?: Color.Black
+            val darkVibrantColor = palette?.darkVibrantSwatch?.rgb?.let { Color(it) } ?: Color.DarkGray
+            onColorsExtracted(vibrantColor, darkVibrantColor)
+        }
+    }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.primary
+    val palette = colors.value
+    val vibrantColor = palette?.vibrantSwatch?.rgb?.let { Color(it) } ?: Color.Black
+    val darkVibrantColor = palette?.darkVibrantSwatch?.rgb?.let { Color(it) } ?: Color.DarkGray
+    val lightVibrantColor = palette?.lightVibrantSwatch?.rgb?.let { Color(it) } ?: Color.LightGray
+    val mutedColor = palette?.mutedSwatch?.rgb?.let { Color(it) } ?: Color.Gray
+    val darkMutedColor = palette?.darkMutedSwatch?.rgb?.let { Color(it) } ?: Color.DarkGray
+    val lightMutedColor = palette?.lightMutedSwatch?.rgb?.let { Color(it) } ?: Color.White
+
+    fun getContrastTextColor(backgroundColor: Color): Color {
+        val luminance = ColorUtils.calculateLuminance(backgroundColor.toArgb())
+        return if (luminance > 0.5) Color.Black else Color.White
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
     ) {
-        Column(
+        Image(
+            painter = painterResource(id = place.imageRes),
+            contentDescription = place.name,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 100.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .height(300.dp),
+            contentScale = ContentScale.Crop
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .background(lightVibrantColor)
+                .padding(16.dp)
         ) {
             Text(
-                text = place.name,
-                fontSize = 65.sp,
-                fontFamily = saltyOceanFontFamily,
-                color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.padding(bottom = 32.dp),
-                maxLines = 2,
-                lineHeight = 70.sp
+                text = "LightVibrant",
+                color = getContrastTextColor(lightVibrantColor),
+                modifier = Modifier.weight(1f)
             )
+        }
 
-            Image(
-                painter = painterResource(id = place.imageRes),
-                contentDescription = place.name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-                    .graphicsLayer {
-                        rotationY = rotationYValue
-                        scaleX = scale
-                        scaleY = scale
-                        this.alpha = alpha
+        Spacer(modifier = Modifier.height(8.dp))
 
-                        renderEffect = BlurEffect(
-                            blurRadius.dp.toPx(),
-                            blurRadius.dp.toPx(),
-                            TileMode.Decal
-                        )
-                    },
-                contentScale = ContentScale.Crop
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .background(vibrantColor)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Vibrant",
+                color = getContrastTextColor(vibrantColor),
+                modifier = Modifier.weight(1f)
             )
+        }
 
-            Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Rotación",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-                Slider(
-                    value = rotationYValue,
-                    onValueChange = { rotationYValue = it },
-                    modifier = Modifier.weight(2f),
-                    valueRange = 0f..360f
-                )
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .background(darkVibrantColor)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "DarkVibrant",
+                color = getContrastTextColor(darkVibrantColor),
+                modifier = Modifier.weight(1f)
+            )
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Escala",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-                Slider(
-                    value = scale,
-                    onValueChange = { scale = it },
-                    modifier = Modifier.weight(2f),
-                    valueRange = 0.1f..3f
-                )
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .background(lightMutedColor)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "LightMuted",
+                color = getContrastTextColor(lightMutedColor),
+                modifier = Modifier.weight(1f)
+            )
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Transparencia",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-                Slider(
-                    value = alpha,
-                    onValueChange = { alpha = it },
-                    modifier = Modifier.weight(2f),
-                    valueRange = 0f..1f
-                )
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .background(mutedColor)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Muted",
+                color = getContrastTextColor(mutedColor),
+                modifier = Modifier.weight(1f)
+            )
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Desenfoque",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-                Slider(
-                    value = blurRadius,
-                    onValueChange = { blurRadius = it },
-                    modifier = Modifier.weight(2f),
-                    valueRange = 0f..20f
-                )
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .background(darkMutedColor)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Dark Muted",
+                color = getContrastTextColor(darkMutedColor),
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
